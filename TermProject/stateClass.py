@@ -6,7 +6,7 @@ class State():
     def __init__(self, name, pop, votes):
         self.name = name
         self.polygon = None
-        self.electoralVotes = votes
+        self.electoralVotes = int(votes)
         self.population = pop
 
         self.demSupport = random.randint(30, 70)
@@ -15,10 +15,13 @@ class State():
         self.color = None
 
         self.wealth = None
+        self.availableMoney = self.wealth
 
         self.influence = 0 #positive is democrat, negative is republican
 
         self.showing = False
+
+        self.outline = 'black'
     
     def __repr__(self):
         return f"{self.name}:{self.hotTopics}, {self.demSupport}-{self.repSupport}, {self.influence}"
@@ -55,3 +58,8 @@ class State():
             self.wealth = 2
         else:
             self.wealth = 1
+        self.availableMoney = self.wealth
+    
+    def updateMoney(self):
+        if self.availableMoney < self.wealth:
+            self.availableMoney += 1
