@@ -12,6 +12,7 @@ from endOfRound import *
 from screens import *
 from mapDrawing import *
 import time
+from CPULogic import *
 
 # cmu graphics from https://www.cs.cmu.edu/~112/notes/notes-animations-part2.html
 # shapefile geodata from https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-1-states-provinces/
@@ -26,14 +27,11 @@ def appStarted(app):
     #create all states
     app.stateDict = createStateDict(app)
 
-    app.player1 = createCandidate('Juan', 'D')
-    app.player2 = createCandidate('Jerry', 'R')
+    app.player1 = createCandidate(app, 'Big Biden', 'D')
+    app.player2 = createCPU(app, 'R')
 
     app.turns = 0
     app.rounds = 0
-
-    #whose turn is it?
-    # app.playerTurn = app.turns%2 #0 = player1, 1 = player2
 
     app.gameOver = False
     app.winner = None
@@ -63,6 +61,8 @@ def appStarted(app):
     app.errorMessage = None
     app.updateMessage = None
 
+    # app.previousMove = None
+
 
 #create randomized map for start of game
 def createStateDict(app):
@@ -76,6 +76,7 @@ def createStateDict(app):
         stateDict[abbrev].findColor()
         stateDict[abbrev].generateIssues()
         stateDict[abbrev].generateWealth()
+        stateDict[abbrev].whoIsWinning()
     
     #geography
     for _, row in app.data.iterrows():
@@ -89,55 +90,66 @@ def createStateDict(app):
     while dCounter < STARTING_STATES or rCounter < STARTING_STATES:
         for state in stateDict:
             if random.randint(1, 6) == 1:
-                if stateDict[state].color == 'blue' and dCounter < STARTING_STATES:
+                if stateDict[state].winningParty == 'D' and dCounter < STARTING_STATES:
                     dCounter += 1
                     stateDict[state].showing = True
-                elif stateDict[state].color == 'red' and rCounter < STARTING_STATES:
+                elif stateDict[state].winningParty == 'R' and rCounter < STARTING_STATES:
                     rCounter += 1
                     stateDict[state].showing = True
     
     return stateDict
 
 
-def createCandidate(name, party):
+def createCandidate(app, name, party):
     candidate = Candidate(name, party)
-    candidate.chooseIssues(party)
+    candidate.chooseIssues()
     return candidate
 
+def createCPU(app, party):
+    candidate = CPU(party)
+    candidate.chooseIssues()
+    candidate.updateStateInfo(app.stateDict)
+    return candidate
 
 def keyPressed(app, event):
     pass
 
 
 def timerFired(app):
+
+    if app.errorMessage != None:
+        time.sleep(1.2)
+        app.errorMessage = None
+
+    app.currentPlayer = findPlayerTurn(app)
+
+    if isinstance(app.currentPlayer, CPU):
+        app.currentPlayer.updateStateInfo(app.stateDict)
+        app.move = app.currentPlayer.chooseMove()
+        CPUMoveVals = app.currentPlayer.returnMoveValues(app, app.move)
+        app.currentState = CPUMoveVals[0]
+        app.currentIssue = CPUMoveVals[1]
+        time.sleep(1.2)
+
     if (app.currentState != None and 
         (app.currentIssue != None or app.move == POLL or app.move == FUNDRAISE)):
         #do move and then reset move vars
         doMove(app, app.currentState, app.currentPlayer, app.currentIssue)
         cancelMove(app)
         return
-    
-    if app.errorMessage != None:
-        time.sleep(1.2)
-        app.errorMessage = None
-    
-    elif app.updateMessage != None:
-        time.sleep(1.3)
-        app.updateMessage = None
-
-def cancelMove(app):
-    app.doingMove = False
-    app.move = None
-    app.currentState = None
-    app.currentIssue = None
-    app.selectingIssue = False
 
 def findPlayerTurn(app):
     #even turns are player1, odds are player2
+    # if app.rounds%2 == 0:
     if app.turns%2 == 0:
         return app.player1
     else:
         return app.player2
+    # else:
+    #     if app.turns%2 == 1:
+    #         return app.player1
+    #     else:
+    #         return app.player2
 
 def mouseMoved(app, event):
     prevState = app.previousState
@@ -156,8 +168,6 @@ def mousePressed(app, event):
     long = convertXToLong(app, event.x)
     lat = convertYToLat(app, event.y)
     point = Point(long, lat)
-
-    app.currentPlayer = findPlayerTurn(app)
 
     if app.stateCard:
         app.stateCard = False
@@ -187,10 +197,10 @@ def mousePressed(app, event):
 
         isMoveClicked(app, event, app.currentPlayer)
 
-        changeMapOverlay(app, event)
+        clickMapOverlay(app, event)
 
 #checks if overlay is clicked and changes to it
-def changeMapOverlay(app, event):
+def clickMapOverlay(app, event):
     if not app.stateCard and not app.selectingIssue:
         x0 = 10
         x1 = 60
@@ -252,31 +262,32 @@ def isMoveClicked(app, event, player):
             return
     app.doingMove = False
 
+def drawScore(app, canvas):
+    x0 = 200
+    x1 = app.width-200
+    y0 = app.height-190
+    y1 = app.height-170
 
-def doMove(app, state, player, issue):
-    #do selected move
-    #turn counter goes down by one if the move cannot be completed
-    if app.stateDict[state].showing:
-        if app.move == FUNDRAISE:
-            fundraise(app, state, player)
-        elif app.move == ADS:
-            runAds(app, state, player, issue)
-        elif app.move == SPEECH:
-            makeSpeech(app, state, player, issue)
-        elif app.move == POLL:
-            app.errorMessage = f'This state is already polled.'
-            app.turns -= 1
-    else:
-        if app.move == POLL:
-            poll(app, state, player)
+    demVoteCount = 0
+    repVoteCount = 0
+    unknownVoteCount = 0
+
+    for state in app.stateDict:
+        if app.stateDict[state].winningParty == 'D' and app.stateDict[state].showing:
+            demVoteCount += app.stateDict[state].electoralVotes
+        elif app.stateDict[state].winningParty == 'R' and app.stateDict[state].showing:
+            repVoteCount += app.stateDict[state].electoralVotes
         else:
-            app.turns -= 1
+            unknownVoteCount += app.stateDict[state].electoralVotes
 
-    #keep track of turns and go to next round at end of 3 turns each
-    app.turns += 1
-    if app.turns == MAX_TURNS:
-        endRound(app)
-    
+    length = x1 - x0
+    voteSize = int(length/538)
+
+    canvas.create_rectangle(x0, y0, x0+(voteSize*demVoteCount), y1, fill='blue')
+    x0 += (voteSize*demVoteCount)
+    canvas.create_rectangle(x0, y0, x0+(voteSize*unknownVoteCount), y1, fill='grey')
+    x0 += (voteSize*unknownVoteCount)
+    canvas.create_rectangle(x0, y0, x1, y1, fill='red')
 
 
 def drawButton(app, canvas, move, spacing):
@@ -326,6 +337,7 @@ def redrawAll(app, canvas):
     else:
         drawMap(app, canvas)
         drawMapOverlayButtons(app, canvas)
+        drawScore(app, canvas)
         drawButton(app, canvas, FUNDRAISE, 1)
         drawButton(app, canvas, POLL, 3)
         drawButton(app, canvas, ADS, 5)
@@ -333,15 +345,16 @@ def redrawAll(app, canvas):
         drawPlayerStats(app, canvas, app.player1, 'left')
         drawPlayerStats(app, canvas, app.player2, 'right')
 
+        if app.gameOver:
+            canvas.create_text(app.width/2, 50, text=f'Game Over! Winner: {declareWinner(app)}')
+            canvas.create_text(app.width/2, 75, text=f'{app.player1.votes} - {app.player2.votes}')
+        else:
+            canvas.create_text(app.width/2, 10, text=f'Round:{app.rounds+1}/{ROUNDS} Turn:{app.turns+1}/{MAX_TURNS}')
+
     if app.errorMessage != None:
         drawErrorMessage(app, canvas)
     elif app.updateMessage != None:
         drawUpdateMessage(app, canvas)
 
-    if app.gameOver:
-        canvas.create_text(app.width/2, 50, text=f'Game Over! Winner: {declareWinner(app)}')
-        canvas.create_text(app.width/2, 75, text=f'{app.player1.votes} - {app.player2.votes}')
-    else:
-        canvas.create_text(app.width/2, 10, text=f'Round:{app.rounds+1}/{ROUNDS} Turn:{app.turns+1}/{MAX_TURNS}')
 
 runApp(width=1000, height=800)

@@ -22,6 +22,8 @@ class State():
         self.showing = False
 
         self.outline = 'black'
+
+        self.winningParty = None
     
     def __repr__(self):
         return f"{self.name}:{self.hotTopics}, {self.demSupport}-{self.repSupport}, {self.influence}"
@@ -30,7 +32,7 @@ class State():
         return hash(self.name)
 
     def findColor(self):
-        if abs(self.demSupport - self.repSupport) <= 5:
+        if abs(self.demSupport - self.repSupport) <= 10:
             self.color = 'purple'
         elif self.demSupport > self.repSupport :
             self.color = 'blue'
@@ -63,3 +65,17 @@ class State():
     def updateMoney(self):
         if self.availableMoney < self.wealth:
             self.availableMoney += 1
+    
+    def whoIsWinning(self):
+        if self.demSupport > self.repSupport:
+            self.winningParty = 'D'
+        elif self.repSupport > self.demSupport:
+            self.winningParty = 'R'
+        else:
+            self.winningParty = None
+    
+    def diminishInfluence(self):
+        if self.influence > 0:
+            self.influence -= 1
+        elif self.influence < 0:
+            self.influence += 1

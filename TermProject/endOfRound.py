@@ -20,6 +20,8 @@ def updateMap(app):
             app.stateDict[state].repSupport -= supportChange
             app.stateDict[state].findColor()
             app.stateDict[state].updateMoney()
+            app.stateDict[state].whoIsWinning()
+            app.stateDict[state].diminishInfluence()
 
 
 def countElectoralVotes(app):

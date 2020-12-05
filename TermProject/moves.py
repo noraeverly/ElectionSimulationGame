@@ -1,4 +1,33 @@
 import random
+from constants import *
+from endOfRound import endRound
+
+
+def doMove(app, state, player, issue):
+    # app.previousMove = (app.move, state, issue)
+    
+    #do selected move
+    #turn counter goes down by one if the move cannot be completed
+    if app.stateDict[state].showing:
+        if app.move == FUNDRAISE:
+            fundraise(app, state, player)
+        elif app.move == ADS:
+            runAds(app, state, player, issue)
+        elif app.move == SPEECH:
+            makeSpeech(app, state, player, issue)
+        elif app.move == POLL:
+            app.errorMessage = f'This state is already polled.'
+            app.turns -= 1
+    else:
+        if app.move == POLL:
+            poll(app, state, player)
+        else:
+            app.turns -= 1
+
+    #keep track of turns and go to next round at end of 3 turns each
+    app.turns += 1
+    if app.turns == MAX_TURNS:
+        endRound(app)
 
 def fundraise(app, state, candidate):
     money = app.stateDict[state].availableMoney
@@ -43,7 +72,7 @@ def runAds(app, state, candidate, issue):
             app.stateDict[state].influence += 1
         else:
             app.stateDict[state].influence -= 1
-        app.updateMessage = f'Successful ad campaign by {candidate.name}!'
+        app.updateMessage = f'Successful ad campaign in {state} by {candidate.name}!'
     else:
         app.updateMessage = f'The people of {state} did not like {candidate.name}\'s ad campaign.'
     print(state, ':', app.stateDict[state].influence)
@@ -56,7 +85,14 @@ def makeSpeech(app, state, candidate, issue):
             app.stateDict[state].influence += 2
         else:
             app.stateDict[state].influence -= 2
-        app.updateMessage = f'{candidate.name}\'s speech was a massive success!'
+        app.updateMessage = f'{candidate.name}\'s speech in {state} was a massive success!'
     else:
         app.updateMessage = f'The people of {state} did not like {candidate.name}\'s speech.'
     print(state, ':', app.stateDict[state].influence, 'influence')
+
+def cancelMove(app):
+    app.doingMove = False
+    app.move = None
+    app.currentState = None
+    app.currentIssue = None
+    app.selectingIssue = False
