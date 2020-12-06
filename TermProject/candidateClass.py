@@ -18,7 +18,7 @@ class Candidate():
         self.money += money
     
     def chooseIssues(self):
-        if self.party == 'D':
+        if self.party == DEM:
             while len(self.issues) < 4:
                 randIndex = random.randint(0, len(DEM_ISSUES)-1)
                 self.issues.add(DEM_ISSUES[randIndex])

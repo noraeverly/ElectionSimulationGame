@@ -1,4 +1,5 @@
 from mapDrawing import *
+from constants import *
 
 def drawStateCard(app, canvas):
     #extract important attributes
@@ -17,17 +18,21 @@ def drawStateCard(app, canvas):
         y0 += 20
         canvas.create_text(x0, y0, text=f'{topic}', font=('Arial 22 bold'), anchor='w')
     
+
+    money = '$' * app.stateDict[state].availableMoney
+    if app.stateDict[state].availableMoney == 0:
+        money = 'Out of money right now.'
     #available money
-    canvas.create_text(app.width/2, 100, text=f'Possible Fundraising Money: {"$ " * app.stateDict[state].availableMoney}', font=('Arial 26 bold'))
+    canvas.create_text(app.width/2, 100, text=f'Possible Fundraising Money: {money}', font=('Arial 25 bold'))
 
     #current influence
-    canvas.create_text(app.width/2, 150, text=f'Current Influence: {app.stateDict[state].influence}', font=('Arial 26 bold'))
+    canvas.create_text(app.width/2, 150, text=f'Current Influence: {app.stateDict[state].influence}', font=('Arial 25 bold'))
 
     #polling info
-    canvas.create_text(app.width/2 - 65, 300, text=f'Latest Polls:', font=('Arial 26 bold'))
-    canvas.create_text(app.width/2 + 35, 300, text=f'{app.stateDict[state].demSupport}', font=('Arial 26 bold'), fill='blue')
-    canvas.create_text(app.width/2 + 65, 300, text=f'-', font=('Arial 26 bold'))
-    canvas.create_text(app.width/2 + 95, 300, text=f'{app.stateDict[state].repSupport}', font=('Arial 26 bold'), fill='red')
+    canvas.create_text(app.width/2 - 65, 300, text=f'Latest Polls:', font=('Arial 25 bold'))
+    canvas.create_text(app.width/2 + 35, 300, text=f'{app.stateDict[state].demSupport}', font=('Arial 25 bold'), fill='blue')
+    canvas.create_text(app.width/2 + 65, 300, text=f'-', font=('Arial 25 bold'))
+    canvas.create_text(app.width/2 + 95, 300, text=f'{app.stateDict[state].repSupport}', font=('Arial 25 bold'), fill='red')
 
         
     #polygon shapes
@@ -81,13 +86,6 @@ def drawIssueChoiceScreen(app, canvas):
         y0 += size
         y1 += size
 
-
-def drawTitleScreen(app, canvas):
-    return 42
-
-def drawCreateCandidateScreen(app, canvas):
-    return 42
-
 #display if user clicks on wrong state
 def drawErrorMessage(app, canvas):
     error = app.errorMessage
@@ -97,3 +95,55 @@ def drawErrorMessage(app, canvas):
 def drawUpdateMessage(app, canvas):
     update = app.updateMessage
     canvas.create_text(app.width/2, 250, text=update, font='Arial 28 bold')
+
+def drawTitleScreen(app, canvas):
+    canvas.create_rectangle(0, 0, app.width, app.height, fill='blue')
+    canvas.create_text(app.width/2, (app.height/2)-200, text='Welcome to Election Simulator!', font='Arial 60 bold', fill='white')
+    canvas.create_text(app.width/2, (app.height/2), text='Press \'Enter\' to see if you have what it takes to win the presidency!', font='Arial 30', fill='white')
+
+def drawCreateCandidateScreen(app, canvas):
+    center = app.width/2
+    #name
+    canvas.create_text((app.width/4)-25, 100, text=f'Name your character: {app.playerName}|', font='Arial 30 bold', anchor='w')
+
+    #party
+    canvas.create_text(center-150, 200, text='Choose your party:', font='Arial 26 bold')
+
+    color = 'light grey' if app.selectedParty == DEM else 'grey'
+    canvas.create_rectangle(center, 175, center+50, 225, fill=color)
+    canvas.create_text(center+25, 200, text=DEM, fill='blue', font='Arial 26 bold')
+
+    color = 'light grey' if app.selectedParty == REP else 'grey'
+    canvas.create_rectangle(center+100, 175, center+150, 225, fill=color)
+    canvas.create_text(center+125, 200, text=REP, fill='red', font='Arial 26 bold')
+
+    #issues
+    if app.selectedParty == DEM:
+        drawPartyIssues(app, canvas, DEM_ISSUES)
+    elif app.selectedParty == REP:
+        drawPartyIssues(app, canvas, REP_ISSUES)
+    
+    #start button
+    x0, y0, x1, y1 = app.width-150, app.height-60, app.width-25, app.height-25
+    canvas.create_rectangle(x0, y0, x1, y1)
+    canvas.create_text((x0+x1)/2, (y0+y1)/2, text='Begin Campaign')
+    
+def drawPartyIssues(app, canvas, partyIssues):
+    size= int(app.height/(2*len(partyIssues)))
+    x0 = app.width - 200
+    y0 = app.height/3 + 50
+    x1 = 200
+    y1 = y0 + 50
+    xText = (x0+x1)/2
+    canvas.create_text(xText, y0-20, text='Choose 4 issues to support:', anchor='s', font='Arial 26 bold')
+
+    for issue in partyIssues:
+        color = 'white'
+        yText = (y0+y1)/2
+        if issue in app.selectedIssues:
+            color = 'LightSkyBlue1'
+        canvas.create_rectangle(x0, y0, x1, y1, fill=color)
+        canvas.create_text(xText, yText, text=f'{issue}')
+        y0 += size
+        y1 += size
+        

@@ -4,8 +4,6 @@ from endOfRound import endRound
 
 
 def doMove(app, state, player, issue):
-    # app.previousMove = (app.move, state, issue)
-    
     #do selected move
     #turn counter goes down by one if the move cannot be completed
     if app.stateDict[state].showing:
@@ -24,6 +22,8 @@ def doMove(app, state, player, issue):
         else:
             app.turns -= 1
 
+    #keep track of previous move for CPU
+    app.previousMove = app.stateDict[state]
     #keep track of turns and go to next round at end of 3 turns each
     app.turns += 1
     if app.turns == MAX_TURNS:
@@ -36,16 +36,16 @@ def fundraise(app, state, candidate):
         app.errorMessage = f'{state} has no more money! Try something else.'
         app.turns -= 1
     #can only gain money from states you are leading in
-    if app.stateDict[state].demSupport > app.stateDict[state].repSupport:
-        if candidate.party == 'D':
+    elif app.stateDict[state].winningParty == DEM:
+        if candidate.party == DEM:
             candidate.getMoney(money)
             app.stateDict[state].availableMoney = 0
             app.updateMessage = f'{candidate.name} earned {money}$'
         else:
             app.errorMessage = f'Not your state! Try another one.'
             app.turns -= 1
-    elif app.stateDict[state].demSupport < app.stateDict[state].repSupport:
-        if candidate.party == 'R':
+    elif app.stateDict[state].winningParty == REP:
+        if candidate.party == REP:
             candidate.getMoney(money)
             app.stateDict[state].availableMoney = 0
             app.updateMessage = f'{candidate.name} earned {money}$'
@@ -66,30 +66,27 @@ def poll(app, state, candidate):
 
 def runAds(app, state, candidate, issue):
     candidate.money -= 1
-    # issue = pickIssue(app, candidate)
     if issue in app.stateDict[state].hotTopics:
-        if candidate.party == 'D':
+        if candidate.party == DEM:
             app.stateDict[state].influence += 1
         else:
             app.stateDict[state].influence -= 1
         app.updateMessage = f'Successful ad campaign in {state} by {candidate.name}!'
     else:
         app.updateMessage = f'The people of {state} did not like {candidate.name}\'s ad campaign.'
-    print(state, ':', app.stateDict[state].influence)
 
 def makeSpeech(app, state, candidate, issue):
     candidate.money -= 2
-    # issue = pickIssue(app, candidate)
     if issue in app.stateDict[state].hotTopics:
-        if candidate.party == 'D':
+        if candidate.party == DEM:
             app.stateDict[state].influence += 2
         else:
             app.stateDict[state].influence -= 2
         app.updateMessage = f'{candidate.name}\'s speech in {state} was a massive success!'
     else:
         app.updateMessage = f'The people of {state} did not like {candidate.name}\'s speech.'
-    print(state, ':', app.stateDict[state].influence, 'influence')
 
+#reset move vars
 def cancelMove(app):
     app.doingMove = False
     app.move = None

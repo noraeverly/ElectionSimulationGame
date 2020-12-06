@@ -34,24 +34,32 @@ class State():
     def findColor(self):
         if abs(self.demSupport - self.repSupport) <= 10:
             self.color = 'purple'
-        elif self.demSupport > self.repSupport :
+        elif self.winningParty == DEM:
             self.color = 'blue'
-        else:
+        elif self.winningParty == REP:
             self.color = 'red'
     
     def generateIssues(self):
-        if self.demSupport > self.repSupport:
+        if self.winningParty == DEM:
             while len(self.hotTopics) < 2:
                 randIndex = random.randint(0, len(DEM_ISSUES)-1)
                 self.hotTopics.add(DEM_ISSUES[randIndex])
             randIndex = random.randint(0, len(REP_ISSUES)-1)
             self.hotTopics.add(REP_ISSUES[randIndex])
-        else:
+        elif self.winningParty == REP:
             while len(self.hotTopics) < 2:
                 randIndex = random.randint(0, len(REP_ISSUES)-1)
                 self.hotTopics.add(REP_ISSUES[randIndex])
             randIndex = random.randint(0, len(DEM_ISSUES)-1)
             self.hotTopics.add(DEM_ISSUES[randIndex])
+        else:
+            #exactly 50-50 states have 4 hot topics
+            while len(self.hotTopics) < 2:
+                randIndex = random.randint(0, len(REP_ISSUES)-1)
+                self.hotTopics.add(REP_ISSUES[randIndex])
+            while len(self.hotTopics) < 4:
+                randIndex = random.randint(0, len(DEM_ISSUES)-1)
+                self.hotTopics.add(DEM_ISSUES[randIndex])
     
     def generateWealth(self):
         if int(self.population) >= 15000000:
@@ -68,9 +76,9 @@ class State():
     
     def whoIsWinning(self):
         if self.demSupport > self.repSupport:
-            self.winningParty = 'D'
+            self.winningParty = DEM
         elif self.repSupport > self.demSupport:
-            self.winningParty = 'R'
+            self.winningParty = REP
         else:
             self.winningParty = None
     

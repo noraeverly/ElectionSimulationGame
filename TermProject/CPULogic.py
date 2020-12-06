@@ -37,11 +37,12 @@ class CPU(Candidate):
         elif move == POLL:
             return self.poll(app)
         elif move == ADS:
-            return self.runAds()
+            return self.influenceMove(app)
         elif move == SPEECH:
-            return self.makeSpeech()
+            return self.influenceMove(app)
 
     def fundraise(self):
+        #optimized fundraising strategy
         highestMoney = 0
         currentState = None
         for state in self.winningStates:
@@ -51,42 +52,51 @@ class CPU(Candidate):
         return (currentState, None)
     
     def poll(self, app):
+        #random polling
         while True:
-            for state in  app.stateDict:
+            for state in app.stateDict:
                 if not app.stateDict[state].showing:
                     if random.randint(1, 10) == 9:
                         return (state, None)
     
-    def runAds(self):
+    #logic for choosing state for ads and speeches
+    def influenceMove(self, app):
         closeStates = self.closeStates
         mostVotes = 0
         tempState = None
         tempIssue = None
 
+        #first looks at close states and targets best close state
         for state in closeStates:
             if closeStates[state].electoralVotes > mostVotes:
-                for issue in self.issues:
-                    if issue in closeStates[state].hotTopics:
+                for issue in closeStates[state].hotTopics:
+                    if issue in self.issues:
                         tempIssue = issue
-                if tempIssue!= None and abs(closeStates[state].influence) < 3:
-                    mostVotes = closeStates[state].electoralVotes
-                    tempState = state
+                        if abs(closeStates[state].influence) < 4:
+                            mostVotes = closeStates[state].electoralVotes
+                            tempState = state
+        
+        #if no close states, finds best state from opponent's states
+        if tempState == None:
+            for state in app.stateDict:
+                if (app.stateDict[state].electoralVotes > mostVotes
+                    and app.stateDict[state].winningParty != self.party):
+                    for issue in app.stateDict[state].hotTopics:
+                        if issue in self.issues:
+                            tempIssue = issue
+                            if abs(closeStates[state].influence) < 4:
+                                mostVotes = closeStates[state].electoralVotes
+                                tempState = state
+
+        #if opponent attacked one of CPU's states, CPU will try to defend that state
+        if app.previousMove.winningParty == self.party and abs(app.previousMove.influence)>0:
+            if app.previousMove.electoralVotes > mostVotes:
+                for issue in app.previousMove.hotTopics:
+                    if issue in self.issues:
+                        if abs(closeStates[state].influence) < 4:
+                            mostVotes = app.previousMove.electoralVotes
+                            tempState = app.previousMove.name
+                            tempIssue = issue
 
         return (tempState, tempIssue)
-    
-    def makeSpeech(self):
-        closeStates = self.closeStates
-        mostVotes = 0
-        tempState = None
-        tempIssue = None
-
-        for state in closeStates:
-            if closeStates[state].electoralVotes > mostVotes:
-                for issue in self.issues:
-                    if issue in closeStates[state].hotTopics:
-                        tempIssue = issue
-                if tempIssue!= None and abs(closeStates[state].influence) < 3:
-                    mostVotes = closeStates[state].electoralVotes
-                    tempState = state
-
-        return (tempState, tempIssue)
+        

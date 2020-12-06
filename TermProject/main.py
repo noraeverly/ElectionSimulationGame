@@ -27,12 +27,20 @@ def appStarted(app):
     #create all states
     app.stateDict = createStateDict(app)
 
-    app.player1 = createCandidate(app, 'Big Biden', 'D')
-    app.player2 = createCPU(app, 'R')
+    #creating player vars
+    app.playerName = ''
+    app.selectedParty = None
+    app.selectedIssues = set()
 
+    #two players
+    app.player1 = None
+    app.player2 = None
+
+    #keep track of turns and rounds
     app.turns = 0
     app.rounds = 0
 
+    #game over vars
     app.gameOver = False
     app.winner = None
 
@@ -54,14 +62,17 @@ def appStarted(app):
     app.currentState = None
     app.currentPlayer = None
 
+    #map overlay and hovering vars
     app.previousState = 'AK'
     app.mapOverlay = 'Name'
     app.overlays = ['Name', 'Votes', 'Wealth', 'Status']
 
+    #displaying updates or errors
     app.errorMessage = None
     app.updateMessage = None
 
-    # app.previousMove = None
+    #keep track of state of previous move
+    app.previousMove = None
 
 
 #create randomized map for start of game
@@ -73,10 +84,10 @@ def createStateDict(app):
         abbrev, pop, votes = line.split("\t", 3)
         pop = pop.replace(',','')
         stateDict[abbrev] = State(abbrev, pop, votes)
-        stateDict[abbrev].findColor()
+        stateDict[abbrev].whoIsWinning()
         stateDict[abbrev].generateIssues()
         stateDict[abbrev].generateWealth()
-        stateDict[abbrev].whoIsWinning()
+        stateDict[abbrev].findColor()
     
     #geography
     for _, row in app.data.iterrows():
@@ -86,14 +97,15 @@ def createStateDict(app):
     
     dCounter = 0
     rCounter = 0
-    #only some states are known at start -- maybe change this later
+
+    #only some states are shown at start
     while dCounter < STARTING_STATES or rCounter < STARTING_STATES:
         for state in stateDict:
             if random.randint(1, 6) == 1:
-                if stateDict[state].winningParty == 'D' and dCounter < STARTING_STATES:
+                if stateDict[state].winningParty == DEM and dCounter < STARTING_STATES:
                     dCounter += 1
                     stateDict[state].showing = True
-                elif stateDict[state].winningParty == 'R' and rCounter < STARTING_STATES:
+                elif stateDict[state].winningParty == REP and rCounter < STARTING_STATES:
                     rCounter += 1
                     stateDict[state].showing = True
     
@@ -101,36 +113,51 @@ def createStateDict(app):
 
 
 def createCandidate(app, name, party):
+    #uses player inputs
     candidate = Candidate(name, party)
-    candidate.chooseIssues()
-    return candidate
+    candidate.issues = app.selectedIssues
+    app.player1 = candidate
 
+#creates CPU player
 def createCPU(app, party):
     candidate = CPU(party)
     candidate.chooseIssues()
     candidate.updateStateInfo(app.stateDict)
-    return candidate
+    app.player2 = candidate
+
 
 def keyPressed(app, event):
-    pass
-
+    if event.key == 'Enter' and app.titleScreen:
+        app.titleScreen = False
+        app.creatingCandidate = True
+    #input name of candidate
+    elif app.creatingCandidate:
+        if event.key == 'Delete':
+            app.playerName = app.playerName[0:-1]
+        elif event.key == 'Space' or event.key == 'Tab':
+            app.playerName += ' '
+        else:
+            app.playerName += event.key
 
 def timerFired(app):
-
+    #only shows error message briefly
     if app.errorMessage != None:
         time.sleep(1.2)
         app.errorMessage = None
 
     app.currentPlayer = findPlayerTurn(app)
 
+    #finds CPU's move vars
     if isinstance(app.currentPlayer, CPU):
         app.currentPlayer.updateStateInfo(app.stateDict)
         app.move = app.currentPlayer.chooseMove()
         CPUMoveVals = app.currentPlayer.returnMoveValues(app, app.move)
         app.currentState = CPUMoveVals[0]
         app.currentIssue = CPUMoveVals[1]
+        #"CPU thinking"
         time.sleep(1.2)
 
+    #perform move if all vars are ready
     if (app.currentState != None and 
         (app.currentIssue != None or app.move == POLL or app.move == FUNDRAISE)):
         #do move and then reset move vars
@@ -152,6 +179,7 @@ def findPlayerTurn(app):
     #         return app.player2
 
 def mouseMoved(app, event):
+    #hovered over state is outlined in yellow
     prevState = app.previousState
     app.stateDict[prevState].outline = 'black'
     long = convertXToLong(app, event.x)
@@ -169,7 +197,14 @@ def mousePressed(app, event):
     lat = convertYToLat(app, event.y)
     point = Point(long, lat)
 
-    if app.stateCard:
+    #clicks check different things depending on game state
+    if app.creatingCandidate:
+        selectParty(app, event)
+        selectIssues(app, event)
+        startGame(app, event)
+
+    #click to exit out of state info panel
+    elif app.stateCard:
         app.stateCard = False
         app.currentState = None
 
@@ -179,10 +214,12 @@ def mousePressed(app, event):
     elif app.doingMove:
         #click on state
         state = clickedState(app, point)
+        #if move is ads or speech, check for money then change game state to selecting issue
         if ((app.move == ADS and app.currentPlayer.money >= 1) 
             or (app.move == SPEECH and app.currentPlayer.money >= 2)):
             app.selectingIssue = True
         if state == None:
+            #if no state was clicked on, cancel the move
             cancelMove(app)
         else:
             app.currentState = state
@@ -195,8 +232,10 @@ def mousePressed(app, event):
             app.stateCard = True
             app.currentState = state
 
+        #check what move is clicked, make it active move
         isMoveClicked(app, event, app.currentPlayer)
 
+        #check which map overlay is clicked, apply it
         clickMapOverlay(app, event)
 
 #checks if overlay is clicked and changes to it
@@ -232,7 +271,6 @@ def clickedIssue(app, event):
 def clickedState(app, point):
     for state in app.stateDict:
         stateGeo = app.stateDict[state].polygon
-        # stateColor = app.stateDict[state].color
         if pointInState(point, stateGeo):
             return state
     return None
@@ -240,6 +278,51 @@ def clickedState(app, point):
 #Is clicked-point in state?
 def pointInState(point, poly):
     return poly.contains(point) #or point.within(poly)
+
+def selectParty(app, event):
+    center = app.width/2
+    if center<event.x<center+50 and 175<event.y<225:
+        app.selectedParty = DEM
+        app.selectedIssues = set()
+    elif center+100<event.x<center+150 and 175<event.y<225:
+        app.selectedParty = REP
+        app.selectedIssues = set()
+
+def selectIssues(app, event):
+    x0 = 200
+    y0 = app.height/3 + 50
+    x1 = app.width - 200
+    y1 = y0 + 50
+    if app.selectedParty == DEM:
+        issues = DEM_ISSUES
+    elif app.selectedParty == REP:
+        issues = REP_ISSUES
+    else:
+        return
+    size= int(app.height/(2*len(issues)))
+
+    for issue in issues:
+        if x0<event.x<x1 and y0<event.y<y1:
+            if issue in app.selectedIssues:
+                app.selectedIssues.remove(issue)
+            elif len(app.selectedIssues) < 4:
+                app.selectedIssues.add(issue)
+            return
+        y0 += size
+        y1 += size
+
+def startGame(app, event):
+    x0, y0, x1, y1 = app.width-150, app.height-60, app.width-25, app.height-25
+    if x0<event.x<x1 and y0<event.y<y1:
+        if len(app.selectedIssues)==4 and app.playerName!='':
+            #create both candidates if game is ready to start
+            createCandidate(app, app.playerName, app.selectedParty)
+            cpuParty = DEM if app.selectedParty==REP else REP
+            createCPU(app, cpuParty)
+            app.creatingCandidate = False
+        else:
+            #game doesn't start until player completes character
+            app.errorMessage = 'Finish creating your character first!'
 
 def isMoveClicked(app, event, player):
     for i in range(1, 8, 2):
@@ -262,20 +345,23 @@ def isMoveClicked(app, event, player):
             return
     app.doingMove = False
 
+#score bar at bottom
 def drawScore(app, canvas):
     x0 = 200
     x1 = app.width-200
     y0 = app.height-190
     y1 = app.height-170
 
+    middle = (x0+x1)/2
+
     demVoteCount = 0
     repVoteCount = 0
     unknownVoteCount = 0
 
     for state in app.stateDict:
-        if app.stateDict[state].winningParty == 'D' and app.stateDict[state].showing:
+        if app.stateDict[state].winningParty == DEM and app.stateDict[state].showing:
             demVoteCount += app.stateDict[state].electoralVotes
-        elif app.stateDict[state].winningParty == 'R' and app.stateDict[state].showing:
+        elif app.stateDict[state].winningParty == REP and app.stateDict[state].showing:
             repVoteCount += app.stateDict[state].electoralVotes
         else:
             unknownVoteCount += app.stateDict[state].electoralVotes
@@ -284,25 +370,29 @@ def drawScore(app, canvas):
     voteSize = int(length/538)
 
     canvas.create_rectangle(x0, y0, x0+(voteSize*demVoteCount), y1, fill='blue')
+    canvas.create_text(x0+5, (y0+y1)/2, text=f'{demVoteCount}', anchor=W, fill='white')
     x0 += (voteSize*demVoteCount)
     canvas.create_rectangle(x0, y0, x0+(voteSize*unknownVoteCount), y1, fill='grey')
     x0 += (voteSize*unknownVoteCount)
     canvas.create_rectangle(x0, y0, x1, y1, fill='red')
+    canvas.create_text(x1-5, (y0+y1)/2, text=f'{repVoteCount}', anchor=E, fill='white')
 
+    canvas.create_line(middle, y0-3, middle, y1+3, width=2)
 
+#move buttons
 def drawButton(app, canvas, move, spacing):
     size= int(app.width/9)
     x0 = spacing * size
     y0 = app.height - 100
     x1 = (spacing+1)*size
     y1 = app.height - 50
-    outline = 'yellow' if move == app.move else 'black'
-    canvas.create_rectangle(x0, y0, x1, y1, fill='white', outline=outline)
+    outline = 'light gray' if move == app.move else 'white'
+    canvas.create_rectangle(x0, y0, x1, y1, fill=outline, outline='black', width=2)
     xText = (x0+x1)/2
     yText = (y0+y1)/2
     canvas.create_text(xText, yText, text=f'{move}')
 
-
+#player stat boxes
 def drawPlayerStats(app, canvas, player, allign):
     dem = 'blue'
     rep = 'red'
@@ -322,6 +412,7 @@ def drawPlayerStats(app, canvas, player, allign):
     canvas.create_text(x1-marg, y0+marg, text=f'{player.party}', anchor='ne', 
                         font='Arial 16 bold', fill=(dem if player.party=='D' else rep))
     canvas.create_text(x0+marg, y0+boxHeight/4-marg, text='Candidate Issues:', anchor='nw', font='Arial 14 italic')
+    
     count = 1
     for issue in player.issues:
         count += 1
@@ -330,7 +421,13 @@ def drawPlayerStats(app, canvas, player, allign):
 
 
 def redrawAll(app, canvas):
-    if app.selectingIssue:
+    if app.titleScreen:
+        drawTitleScreen(app, canvas)
+    elif app.creatingCandidate:
+        drawCreateCandidateScreen(app, canvas)
+        if app.errorMessage != None:
+            drawErrorMessage(app, canvas)
+    elif app.selectingIssue:
         drawIssueChoiceScreen(app, canvas)
     elif app.stateCard:
         drawStateCard(app, canvas)
@@ -346,15 +443,15 @@ def redrawAll(app, canvas):
         drawPlayerStats(app, canvas, app.player2, 'right')
 
         if app.gameOver:
-            canvas.create_text(app.width/2, 50, text=f'Game Over! Winner: {declareWinner(app)}')
-            canvas.create_text(app.width/2, 75, text=f'{app.player1.votes} - {app.player2.votes}')
+            canvas.create_text(app.width/2, 50, text=f'Game Over! Winner: {declareWinner(app)}', font='Arial 25 bold')
+            canvas.create_text(app.width/2, 75, text=f'{app.player1.votes} - {app.player2.votes}', font='Arial 20')
+        elif app.errorMessage != None:
+            drawErrorMessage(app, canvas)
         else:
             canvas.create_text(app.width/2, 10, text=f'Round:{app.rounds+1}/{ROUNDS} Turn:{app.turns+1}/{MAX_TURNS}')
-
-    if app.errorMessage != None:
-        drawErrorMessage(app, canvas)
-    elif app.updateMessage != None:
-        drawUpdateMessage(app, canvas)
+            if app.updateMessage != None:
+                drawUpdateMessage(app, canvas)
 
 
-runApp(width=1000, height=800)
+
+runApp(width=DEFAULT_SCREEN_WIDTH, height=DEFAULT_SCREEN_HEIGHT)

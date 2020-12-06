@@ -1,3 +1,4 @@
+from constants import DEM, REP
 
 #need to find good ratios to orient map well
 def drawMap(app, canvas):
@@ -8,6 +9,8 @@ def drawMap(app, canvas):
         #state color
         if not app.stateDict[state].showing:
             color = 'grey'
+        elif app.gameOver:
+            color = 'blue' if app.stateDict[state].winningParty == DEM else 'red'
         else:
             color = app.stateDict[state].color
         
@@ -40,6 +43,7 @@ def drawState(app, canvas, points, color, outline):
     canvas.create_polygon(points, fill=color, outline=outline, width=width)
 
 
+#map overlay logic
 def drawStateName(app, canvas, name, cx, cy):
     canvas.create_text(cx, cy, text=name, font='Arial 8 bold')
 
@@ -66,7 +70,6 @@ def drawMapOverlay(app, canvas, state, stateGeo):
         drawStateWealth(app, canvas, state, cx, cy)
     elif app.mapOverlay == 'Status' and app.stateDict[state].showing:
         drawStateStatus(app, canvas, state, cx, cy)
-
     
 
 #these 4 functions convert between canvas points and longitude/latitude points
@@ -82,6 +85,7 @@ def convertXToLong(app, x):
 def convertYToLat(app, y):
     return -(y - (app.height*1.05))/11
 
+#buttons for map overlays
 def drawMapOverlayButtons(app, canvas):
     x0 = 10
     x1 = 60
