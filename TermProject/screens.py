@@ -1,5 +1,8 @@
 from mapDrawing import *
 from constants import *
+from cmu_112_graphics import *
+
+
 
 def drawStateCard(app, canvas):
     #extract important attributes
@@ -15,7 +18,7 @@ def drawStateCard(app, canvas):
     y0 = app.height/2
     canvas.create_text(x0, y0, text=f'Hot Topics:', font=('Arial 22 bold'), anchor='w')
     for topic in app.stateDict[state].hotTopics:
-        y0 += 20
+        y0 += 30
         canvas.create_text(x0, y0, text=f'{topic}', font=('Arial 22 bold'), anchor='w')
     
 
@@ -96,15 +99,32 @@ def drawUpdateMessage(app, canvas):
     update = app.updateMessage
     canvas.create_text(app.width/2, 250, text=update, font='Arial 28 bold')
 
+
 def drawTitleScreen(app, canvas):
     canvas.create_rectangle(0, 0, app.width, app.height, fill='blue')
+    canvas.create_image(300, 300, image=ImageTk.PhotoImage(app.flagImage))
     canvas.create_text(app.width/2, (app.height/2)-200, text='Welcome to Election Simulator!', font='Arial 60 bold', fill='white')
-    canvas.create_text(app.width/2, (app.height/2), text='Press \'Enter\' to see if you have what it takes to win the presidency!', font='Arial 30', fill='white')
+    canvas.create_text(app.width/2, (app.height/2)-50, text='Time to see if you have what it takes to win the presidency!', font='Arial 30', fill='white')
+
+    canvas.create_rectangle((app.width/3)-50, (app.height/2)+50, (app.width/3)+50, (app.height/2)+100, fill='white', width=3)
+    canvas.create_text((app.width/3), (app.height/2)+75, text='Single Player')
+
+    canvas.create_rectangle(2*(app.width/3)-50, (app.height/2)+50, 2*(app.width/3)+50, (app.height/2)+100, fill='white', width=3)
+    canvas.create_text(2*(app.width/3), (app.height/2)+75, text='Multiplayer')
+
 
 def drawCreateCandidateScreen(app, canvas):
+    if app.localMultiplayer:
+        if app.player1 == None:
+            canvas.create_text((app.width/2), 50, text=f'Create Player 1', font='Arial 30 bold')
+        else:
+            canvas.create_text((app.width/2), 50, text=f'Create Player 2', font='Arial 30 bold')
+    else:
+        canvas.create_text((app.width/2), 50, text=f'Create your Candidate', font='Arial 30 bold')
+
     center = app.width/2
     #name
-    canvas.create_text((app.width/4)-25, 100, text=f'Name your character: {app.playerName}|', font='Arial 30 bold', anchor='w')
+    canvas.create_text((app.width/4)-25, 125, text=f'Name your character: {app.playerName}|', font='Arial 30 bold', anchor='w')
 
     #party
     canvas.create_text(center-150, 200, text='Choose your party:', font='Arial 26 bold')

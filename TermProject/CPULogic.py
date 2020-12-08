@@ -71,10 +71,10 @@ class CPU(Candidate):
             if closeStates[state].electoralVotes > mostVotes:
                 for issue in closeStates[state].hotTopics:
                     if issue in self.issues:
-                        tempIssue = issue
                         if abs(closeStates[state].influence) < 4:
                             mostVotes = closeStates[state].electoralVotes
                             tempState = state
+                            tempIssue = issue
         
         #if no close states, finds best state from opponent's states
         if tempState == None:
@@ -83,20 +83,19 @@ class CPU(Candidate):
                     and app.stateDict[state].winningParty != self.party):
                     for issue in app.stateDict[state].hotTopics:
                         if issue in self.issues:
-                            tempIssue = issue
                             if abs(closeStates[state].influence) < 4:
                                 mostVotes = closeStates[state].electoralVotes
                                 tempState = state
+                                tempIssue = issue
 
         #if opponent attacked one of CPU's states, CPU will try to defend that state
         if app.previousMove.winningParty == self.party and abs(app.previousMove.influence)>0:
             if app.previousMove.electoralVotes > mostVotes:
                 for issue in app.previousMove.hotTopics:
                     if issue in self.issues:
-                        if abs(closeStates[state].influence) < 4:
+                        if abs(app.previousMove.influence) < 4:
                             mostVotes = app.previousMove.electoralVotes
                             tempState = app.previousMove.name
                             tempIssue = issue
 
         return (tempState, tempIssue)
-        

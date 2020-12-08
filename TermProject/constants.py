@@ -9,7 +9,7 @@ MAX_TURNS = 6
 ROUNDS = 10
 
 #List of each party's core issues --> need to update
-REP_ISSUES = ['Lower Taxes', 'Large Military', 'Protect Borders', 'Privatized Health Care', 'Support Small Businesses', 'Illegalize Abortion']
+REP_ISSUES = ['Lower Taxes', 'Large Military', 'Protect Borders', 'Privatized Health Care', 'Support Small Businesses', 'Protecting Life']
 
 DEM_ISSUES = ['Women''s Reproductive Health', 'Racial Equality', 'LGBTQ Rights', 'Public Education', 'Raise Minimum Wage', 'Legalize Marijuana']
 

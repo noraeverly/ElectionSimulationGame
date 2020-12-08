@@ -24,6 +24,10 @@ def appStarted(app):
     app.data.columns = ['state', 'state_code', 'geometry']
     app.data.head()
 
+    #images
+    url = 'https://i.pinimg.com/originals/88/46/8a/88468a8c331004db26b00b31e642b090.png'
+    app.flagImage = app.loadImage(url)
+
     #create all states
     app.stateDict = createStateDict(app)
 
@@ -74,6 +78,9 @@ def appStarted(app):
     #keep track of state of previous move
     app.previousMove = None
 
+    #multiplayer mode
+    app.localMultiplayer = False
+
 
 #create randomized map for start of game
 def createStateDict(app):
@@ -116,14 +123,14 @@ def createCandidate(app, name, party):
     #uses player inputs
     candidate = Candidate(name, party)
     candidate.issues = app.selectedIssues
-    app.player1 = candidate
+    return candidate
 
 #creates CPU player
 def createCPU(app, party):
     candidate = CPU(party)
     candidate.chooseIssues()
     candidate.updateStateInfo(app.stateDict)
-    app.player2 = candidate
+    return candidate
 
 
 def keyPressed(app, event):
@@ -154,9 +161,9 @@ def timerFired(app):
         CPUMoveVals = app.currentPlayer.returnMoveValues(app, app.move)
         app.currentState = CPUMoveVals[0]
         app.currentIssue = CPUMoveVals[1]
-        #"CPU thinking"
+        #CPU "thinking"
         time.sleep(1.2)
-
+    
     #perform move if all vars are ready
     if (app.currentState != None and 
         (app.currentIssue != None or app.move == POLL or app.move == FUNDRAISE)):
@@ -165,18 +172,13 @@ def timerFired(app):
         cancelMove(app)
         return
 
+
 def findPlayerTurn(app):
     #even turns are player1, odds are player2
-    # if app.rounds%2 == 0:
     if app.turns%2 == 0:
         return app.player1
     else:
         return app.player2
-    # else:
-    #     if app.turns%2 == 1:
-    #         return app.player1
-    #     else:
-    #         return app.player2
 
 def mouseMoved(app, event):
     #hovered over state is outlined in yellow
@@ -198,7 +200,18 @@ def mousePressed(app, event):
     point = Point(long, lat)
 
     #clicks check different things depending on game state
-    if app.creatingCandidate:
+    if app.titleScreen:
+        x0, y0, x1, y1 = (app.width/3)-50, (app.height/2)+50, (app.width/3)+50, (app.height/2)+100,
+        if x0<event.x<x1 and y0<event.y<y1:
+            app.titleScreen = False
+            app.creatingCandidate = True
+        x0, y0, x1, y1 = 2*(app.width/3)-50, (app.height/2)+50, 2*(app.width/3)+50, (app.height/2)+100
+        if x0<event.x<x1 and y0<event.y<y1:
+            app.titleScreen = False
+            app.creatingCandidate = True
+            app.localMultiplayer = True
+
+    elif app.creatingCandidate:
         selectParty(app, event)
         selectIssues(app, event)
         startGame(app, event)
@@ -237,6 +250,7 @@ def mousePressed(app, event):
 
         #check which map overlay is clicked, apply it
         clickMapOverlay(app, event)
+
 
 #checks if overlay is clicked and changes to it
 def clickMapOverlay(app, event):
@@ -280,6 +294,9 @@ def pointInState(point, poly):
     return poly.contains(point) #or point.within(poly)
 
 def selectParty(app, event):
+    if app.localMultiplayer and app.player1 != None:
+        return
+
     center = app.width/2
     if center<event.x<center+50 and 175<event.y<225:
         app.selectedParty = DEM
@@ -314,11 +331,19 @@ def selectIssues(app, event):
 def startGame(app, event):
     x0, y0, x1, y1 = app.width-150, app.height-60, app.width-25, app.height-25
     if x0<event.x<x1 and y0<event.y<y1:
-        if len(app.selectedIssues)==4 and app.playerName!='':
+        if len(app.selectedIssues)==4 and app.playerName!='' and not app.localMultiplayer:
             #create both candidates if game is ready to start
-            createCandidate(app, app.playerName, app.selectedParty)
+            app.player1 = createCandidate(app, app.playerName, app.selectedParty)
             cpuParty = DEM if app.selectedParty==REP else REP
-            createCPU(app, cpuParty)
+            app.player2 = createCPU(app, cpuParty)
+            app.creatingCandidate = False
+        elif app.player1==None and len(app.selectedIssues)==4 and app.playerName!='' and app.localMultiplayer:
+            app.player1 = createCandidate(app, app.playerName, app.selectedParty)
+            app.playerName = ''
+            app.selectedParty = DEM if app.selectedParty==REP else REP
+            app.selectedIssues = set()
+        elif app.player1 != None and len(app.selectedIssues)==4 and app.playerName!='' and app.localMultiplayer:
+            app.player2 = createCandidate(app, app.playerName, app.selectedParty)
             app.creatingCandidate = False
         else:
             #game doesn't start until player completes character
@@ -451,7 +476,6 @@ def redrawAll(app, canvas):
             canvas.create_text(app.width/2, 10, text=f'Round:{app.rounds+1}/{ROUNDS} Turn:{app.turns+1}/{MAX_TURNS}')
             if app.updateMessage != None:
                 drawUpdateMessage(app, canvas)
-
 
 
 runApp(width=DEFAULT_SCREEN_WIDTH, height=DEFAULT_SCREEN_HEIGHT)
