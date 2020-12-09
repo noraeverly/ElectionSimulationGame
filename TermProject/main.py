@@ -45,8 +45,8 @@ def appStarted(app):
     app.selectedAvatar = 0
 
     #two players
-    app.player1 = createCandidate(app, 'yeet', DEM)
-    app.player2 = createCandidate(app, 'wow', REP)
+    app.player1 = None
+    app.player2 = None
 
     #keep track of turns and rounds
     app.turns = 0
