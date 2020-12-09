@@ -10,6 +10,8 @@ class Candidate():
         self.name = name
 
         self.votes = 0
+
+        self.avatar = None
     
     def __repr__(self):
         return f'{self.name} ({self.party})'

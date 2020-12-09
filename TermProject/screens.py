@@ -3,7 +3,6 @@ from constants import *
 from cmu_112_graphics import *
 
 
-
 def drawStateCard(app, canvas):
     #extract important attributes
     state = app.currentState
@@ -29,13 +28,21 @@ def drawStateCard(app, canvas):
     canvas.create_text(app.width/2, 100, text=f'Possible Fundraising Money: {money}', font=('Arial 25 bold'))
 
     #current influence
-    canvas.create_text(app.width/2, 150, text=f'Current Influence: {app.stateDict[state].influence}', font=('Arial 25 bold'))
+    influence = abs(app.stateDict[state].influence)
+    if influence == 0:
+        infColor = 'black'
+    elif influence == app.stateDict[state].influence:
+        infColor = 'blue'
+    else:
+        infColor = 'red'
+    canvas.create_text((app.width/2) - 60, 250, text=f'Current Influence:', font=('Arial 25 bold'))
+    canvas.create_text((app.width/2) + 60, 250, text=f'{influence}', font=('Arial 25 bold'), fill=infColor)
 
     #polling info
-    canvas.create_text(app.width/2 - 65, 300, text=f'Latest Polls:', font=('Arial 25 bold'))
-    canvas.create_text(app.width/2 + 35, 300, text=f'{app.stateDict[state].demSupport}', font=('Arial 25 bold'), fill='blue')
-    canvas.create_text(app.width/2 + 65, 300, text=f'-', font=('Arial 25 bold'))
-    canvas.create_text(app.width/2 + 95, 300, text=f'{app.stateDict[state].repSupport}', font=('Arial 25 bold'), fill='red')
+    canvas.create_text(app.width/2 - 65, 150, text=f'Latest Polls:', font=('Arial 25 bold'))
+    canvas.create_text(app.width/2 + 35, 150, text=f'{app.stateDict[state].demSupport}', font=('Arial 25 bold'), fill='blue')
+    canvas.create_text(app.width/2 + 65, 150, text=f'-', font=('Arial 25 bold'))
+    canvas.create_text(app.width/2 + 95, 150, text=f'{app.stateDict[state].repSupport}', font=('Arial 25 bold'), fill='red')
 
         
     #polygon shapes
@@ -102,7 +109,7 @@ def drawUpdateMessage(app, canvas):
 
 def drawTitleScreen(app, canvas):
     canvas.create_rectangle(0, 0, app.width, app.height, fill='blue')
-    canvas.create_image(300, 300, image=ImageTk.PhotoImage(app.flagImage))
+    canvas.create_image(app.width/2, app.height-175, image=ImageTk.PhotoImage(app.flagMap))
     canvas.create_text(app.width/2, (app.height/2)-200, text='Welcome to Election Simulator!', font='Arial 60 bold', fill='white')
     canvas.create_text(app.width/2, (app.height/2)-50, text='Time to see if you have what it takes to win the presidency!', font='Arial 30', fill='white')
 
@@ -121,6 +128,8 @@ def drawCreateCandidateScreen(app, canvas):
             canvas.create_text((app.width/2), 50, text=f'Create Player 2', font='Arial 30 bold')
     else:
         canvas.create_text((app.width/2), 50, text=f'Create your Candidate', font='Arial 30 bold')
+
+    drawAvatarChoice(app, canvas)
 
     center = app.width/2
     #name
@@ -166,4 +175,17 @@ def drawPartyIssues(app, canvas, partyIssues):
         canvas.create_text(xText, yText, text=f'{issue}')
         y0 += size
         y1 += size
-        
+
+def drawAvatarChoice(app, canvas):
+    image = app.avatarList[app.selectedAvatar]
+
+    #image resizing help from https://stackoverflow.com/questions/273946/how-do-i-resize-an-image-using-pil-and-maintain-its-aspect-ratio
+    basewidth = 100
+    wpercent = (basewidth/float(image.size[0]))
+    hsize = int((float(image.size[1])*float(wpercent)))
+    image = image.resize((basewidth,hsize), Image.ANTIALIAS)
+    canvas.create_rectangle(48, 48, 151, 151, width=2)
+    canvas.create_image(100, 100, image=ImageTk.PhotoImage(image))
+
+    canvas.create_text(75, 165, text='<', font='Arial 16 bold')
+    canvas.create_text(125, 165, text='>', font='Arial 16 bold')

@@ -24,6 +24,7 @@ def doMove(app, state, player, issue):
 
     #keep track of previous move for CPU
     app.previousMove = app.stateDict[state]
+
     #keep track of turns and go to next round at end of 3 turns each
     app.turns += 1
     if app.turns == MAX_TURNS:
@@ -84,7 +85,11 @@ def makeSpeech(app, state, candidate, issue):
             app.stateDict[state].influence -= 2
         app.updateMessage = f'{candidate.name}\'s speech in {state} was a massive success!'
     else:
-        app.updateMessage = f'The people of {state} did not like {candidate.name}\'s speech.'
+        if candidate.party == DEM:
+            app.stateDict[state].influence += 1
+        else:
+            app.stateDict[state].influence -= 1
+        app.updateMessage = f'{candidate.name} should have spoken about a different topic in {state}.'
 
 #reset move vars
 def cancelMove(app):
@@ -93,3 +98,10 @@ def cancelMove(app):
     app.currentState = None
     app.currentIssue = None
     app.selectingIssue = False
+
+def findPlayerTurn(app):
+    #even turns are player1, odds are player2
+    if app.turns%2 == 0:
+        return app.player1
+    else:
+        return app.player2

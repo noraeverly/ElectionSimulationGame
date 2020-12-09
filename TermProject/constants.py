@@ -9,9 +9,9 @@ MAX_TURNS = 6
 ROUNDS = 10
 
 #List of each party's core issues --> need to update
-REP_ISSUES = ['Lower Taxes', 'Large Military', 'Protect Borders', 'Privatized Health Care', 'Support Small Businesses', 'Protecting Life']
+REP_ISSUES = ['Lower Taxes', 'Large Military', 'Protect Borders', 'Privatize Health Care', 'Gun Rights', 'Protect Unborn Lives']
 
-DEM_ISSUES = ['Women''s Reproductive Health', 'Racial Equality', 'LGBTQ Rights', 'Public Education', 'Raise Minimum Wage', 'Legalize Marijuana']
+DEM_ISSUES = ['Women\'s Reproductive Health', 'Racial Equality', 'LGBTQ Rights', 'Public Education', 'Address Climate Change', 'Legalize Marijuana']
 
 #number of starting states per party 
 STARTING_STATES = 10

@@ -19,9 +19,9 @@ def updateMap(app):
             supportChange = app.stateDict[state].influence * 2
             app.stateDict[state].demSupport += supportChange
             app.stateDict[state].repSupport -= supportChange
+            app.stateDict[state].whoIsWinning()
             app.stateDict[state].findColor()
             app.stateDict[state].updateMoney()
-            app.stateDict[state].whoIsWinning()
             app.stateDict[state].diminishInfluence()
 
 #tally up votes at end of game
@@ -46,5 +46,7 @@ def countElectoralVotes(app):
 def declareWinner(app):
     if app.player1.votes >= 270:
         return app.player1
-    else:
+    elif app.player2.votes >= 270:
         return app.player2
+    else:
+        return 'Tie!'

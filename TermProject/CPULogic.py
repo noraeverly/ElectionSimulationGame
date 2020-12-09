@@ -83,8 +83,8 @@ class CPU(Candidate):
                     and app.stateDict[state].winningParty != self.party):
                     for issue in app.stateDict[state].hotTopics:
                         if issue in self.issues:
-                            if abs(closeStates[state].influence) < 4:
-                                mostVotes = closeStates[state].electoralVotes
+                            if abs(app.stateDict[state].influence) < 4:
+                                mostVotes = app.stateDict[state].electoralVotes
                                 tempState = state
                                 tempIssue = issue
 
